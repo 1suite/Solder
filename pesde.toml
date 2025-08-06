@@ -1,0 +1,31 @@
+name = "1suite/solder"
+version = "0.1.0"
+description = "A bundler for Roblox models and Luau files"
+authors = ["AstonishedLiker"]
+repository = "https://github.com/1suite/Solder"
+license = "MIT"
+
+[wally_indices]
+default = "https://github.com/UpliftGames/wally-index"
+
+[scripts]
+roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
+sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
+
+[target]
+environment = "lune"
+build_files = ["src"]
+
+[engines]
+pesde = "^0.7.0"
+lune = "=0.10.1"
+
+[indices]
+default = "https://github.com/pesde-pkg/index"
+
+[dev_dependencies]
+scripts = { name = "pesde/scripts_rojo", version = "^0.1.1", target = "lune" }
+rojo = { name = "pesde/rojo", version = "^7.4.4", target = "lune" }
+
+[dependencies]
+luaencode = { wally = "chadhyatt/luaencode", version = "^1.4.4" }
