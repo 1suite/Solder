@@ -16,6 +16,8 @@ sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
 
 [target]
 environment = "lune"
+lib = "src/init.luau"
+bin = "bin/init.luau"
 build_files = ["src"]
 
 [engines]
