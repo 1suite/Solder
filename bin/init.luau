@@ -26,10 +26,6 @@ Options:
     --track-lines               Save the line offsets for debugging purposes in error messages.
     --override-root <path>      Define the path to start bundling at (if the input file is a Roblox Model).
     --env-name <name>           Define the environment name of the bundled script.
-
-Commands:
-    init                    Initialize a new project.
-    build                   Build the project.
 ]]
 
 local parsedArguments: {[Option]: boolean | string} = {}
