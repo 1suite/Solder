@@ -4,7 +4,7 @@
 
 assert(string.match(_VERSION, "^Lune 0.10.1"), "Solder requires running on Lune 0.10.1!")
 
-type Option = "--help" | "--version" | "--input" | "--output" | "--quiet" | "--track-lines" | "--root-override" | "--env-name"
+type Option = "--help" | "--version" | "--input" | "--output" | "--quiet" | "--track-lines" | "--override-root" | "--env-name"
 
 local Bundler = require("./src")
 
@@ -26,7 +26,7 @@ Options:
     --output <file>             Specify output file.
     --quiet                     Suppress non-essential output.
     --track-lines               Save the line offsets for debugging purposes in error messages.
-    --root-override <path>      Define the path to start bundling at (if the input file is a Roblox Model).
+    --override-root <path>      Define the path to start bundling at (if the input file is a Roblox Model).
     --env-name <name>           Define the environment name of the bundled script.
 
 Commands:
@@ -41,8 +41,8 @@ local function failBecause(reason: string)
     process.exit(1)
 end
 
-local supportedOptions = {"--help", "--version", "--input", "--output", "--quiet", "--track-lines", "--root-override", "--env-name"}
-local optionsToReadValue = {"--input", "--output", "--root-override", "--env-name"}
+local supportedOptions: {Option} = {"--help", "--version", "--input", "--output", "--quiet", "--track-lines", "--override-root", "--env-name"}
+local optionsToReadValue = {"--input", "--output", "--override-root", "--env-name"}
 local optionToRead: Option
 
 for _, argument in process.args do
@@ -57,6 +57,7 @@ for _, argument in process.args do
     end
 
     if (not table.find(optionsToReadValue, argument)) then
+        parsedArguments[argument] = true
         continue
     end
 
@@ -99,7 +100,7 @@ log("The input file is bundleable.")
 local bundleSuccess, output = pcall(Bundler.Bundle,
     fs.readFile(parsedArguments["--input" :: Option] :: string),
     parsedArguments["--track-lines" :: Option] :: boolean,
-    parsedArguments["--root-override" :: Option] :: string,
+    parsedArguments["--override-root" :: Option] :: string,
     parsedArguments["--env-name" :: Option] :: string,
     log
 )
