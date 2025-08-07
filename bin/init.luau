@@ -13,12 +13,9 @@ local stdio = require("@lune/stdio")
 local serde = require("@lune/serde")
 local fs = require("@lune/fs")
 
-local fileSeparator = process.os == "windows" and "\\" or "/"
-local fileName, fileExtension = string.match(debug.info(1, "s"), `([^/{fileSeparator}]+)%.?([^.{fileSeparator}/]*)$`) --// Luau LSP / Typechecker bug
-
-local CLI_HELP_TEXT = string.format([[
+local CLI_HELP_TEXT = [[
 Usage:
-    %s [options]
+    solder [options]
 
 Options:
     --help                      Show this help message and exit.
@@ -33,7 +30,7 @@ Options:
 Commands:
     init                    Initialize a new project.
     build                   Build the project.
-]], if fileExtension == "exe" and process.os == "windows" then fileName elseif fileExtension then `{fileName}.{fileExtension}` else fileName)
+]]
 
 local parsedArguments: {[Option]: boolean | string} = {}
 
