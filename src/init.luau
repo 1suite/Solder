@@ -49,12 +49,12 @@ function Bundler.IsBundleable(inputFilePath: string): (boolean, string?)
     return checkChildren(serdeRet :: {roblox.Instance & Instance}) --// To get Luau LSP's type definitions
 end
 
-function Bundler.Bundle(input: string, trackLines: boolean, rootOverride: string, _environmentName: string?, logFn: (message: string) -> ()): string
+function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: string, _environmentName: string?, logFn: (message: string) -> ()): string
     local environmentName = _environmentName or "SolderRuntime"
     local modelRoot = roblox.deserializeModel(input)
 
-    if rootOverride then
-        local paths = string.split(rootOverride, ".")
+    if rootOverridePath then
+        local paths = string.split(rootOverridePath, ".")
 
         for _, childName in paths do
             local oldModelRoot = modelRoot
@@ -65,7 +65,7 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverride: string
             end
 
             if modelRoot == oldModelRoot then
-                error(`An instance named '{childName}' could not be found in the root override '{rootOverride}'.`)
+                error(`An instance named '{childName}' could not be found in the root override '{rootOverridePath}'.`)
             end
         end
     end
