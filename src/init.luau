@@ -70,7 +70,8 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
         end
     end
 
-    local bundledModule = fs.readFile("./src/Snippets/BundledModule.luau")
+    local currentPath = debug.info(1, "s")
+    local bundledModule = fs.readFile(currentPath .. "/../src/Snippets/BundledModule.luau")
     local closuresMarkerLineNumber = table.find(string.split(string.gsub(bundledModule, "\r", ""), "\n"), "--MARKER:CLOSURES") :: number --// Stupid CRLF
 
     assert(type(closuresMarkerLineNumber) == "number", "must be a number")
