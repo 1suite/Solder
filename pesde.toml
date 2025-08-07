@@ -5,6 +5,11 @@ authors = ["AstonishedLiker"]
 repository = "https://github.com/1suite/Solder"
 license = "MIT"
 
+includes = [
+    "src/**",
+    "pesde.toml"
+]
+
 [scripts]
 roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
 sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
