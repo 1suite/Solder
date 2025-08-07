@@ -203,6 +203,7 @@ local cachedRequires: {[SolderInstance]: any} = {}
 local function errorIfInvalidRet(ret: {[number]: any, n: number}): ()
     ret.n -= 1 --// adjust for pcall result
     local isInvalidRet = isRobloxEnv and ret.n ~= 1 or ret.n < 1
+    local isInvalidType = false
 
     if not isRobloxEnv then
         for idx: string | number, value in ret do
@@ -212,7 +213,7 @@ local function errorIfInvalidRet(ret: {[number]: any, n: number}): ()
 
             local valueType = type(value)
             if valueType ~= "table" and valueType ~= "function" then
-                isInvalidRet = false
+                isInvalidType = true
                 break
             end
         end
@@ -220,9 +221,9 @@ local function errorIfInvalidRet(ret: {[number]: any, n: number}): ()
 
     if isInvalidRet and isRobloxEnv then
         return error("Module code did not return exactly one value", 4)
-    elseif isInvalidRet and ret.n < 1 then
-        return error("module must return a value", 4)
     elseif isInvalidRet then
+        return error("module must return a value", 4)
+    elseif isInvalidType then
         return error("module must return a table or function", 4)
     end
 end
