@@ -14,7 +14,7 @@ function Bundler.IsBundleable(inputFilePath: string): (boolean, string?)
     end
 
     if not fs.isFile(inputFilePath) then
-        return false, "The input file's does not exist."
+        return false, "The input file does not exist."
     end
 
     if fileExtension == "luau" then
