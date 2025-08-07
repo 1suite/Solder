@@ -4,7 +4,7 @@
 
 assert(string.match(_VERSION, "^Lune 0.10.1"), "Solder requires running on Lune 0.10.1!")
 
-type Option = "--help" | "--version" | "--input" | "--output" | "--quiet" | "--track-lines"
+type Option = "--help" | "--version" | "--input" | "--output" | "--quiet" | "--track-lines" | "--root-override" | "--env-name"
 
 local Bundler = require("@self/Bundler")
 
@@ -26,7 +26,8 @@ Options:
     --output <file>             Specify output file.
     --quiet                     Suppress non-essential output.
     --track-lines               Save the line offsets for debugging purposes in error messages.
-    --override-root <path>      Define the path to start bundling at (if the input file is a Roblox Model).
+    --root-override <path>      Define the path to start bundling at (if the input file is a Roblox Model).
+    --env-name <name>           Define the environment name of the bundled script.
 
 Commands:
     init                    Initialize a new project.
@@ -40,21 +41,26 @@ local function failBecause(reason: string)
     process.exit(1)
 end
 
-local supportedOptions = {"--help", "--version", "--input", "--output", "--quiet", "--track-lines"}
+local supportedOptions = {"--help", "--version", "--input", "--output", "--quiet", "--track-lines", "--root-override", "--env-name"}
+local optionsToReadValue = {"--input", "--output", "--root-override", "--env-name"}
 local optionToRead: Option
+
 for _, argument in process.args do
-    if (not optionToRead) and (argument ~= "--output" and argument ~= "--input") then
-        parsedArguments[argument] = true
-        continue
-    elseif (not optionToRead) and (not table.find(supportedOptions, argument)) then
-        failBecause(`Unknown option '{argument}'.`)
-    elseif (not optionToRead) then
-        optionToRead = argument
+    if optionToRead then
+        parsedArguments[optionToRead :: Option] = argument
+        optionToRead = (nil :: Option?) :: Option
         continue
     end
 
-    parsedArguments[optionToRead :: Option] = argument
-    optionToRead = (nil :: Option?) :: Option
+    if (not table.find(supportedOptions, argument)) then
+        failBecause(`Unknown option '{argument}'.`)
+    end
+
+    if (not table.find(optionsToReadValue, argument)) then
+        continue
+    end
+
+    optionToRead = argument
 end
 
 if parsedArguments["--help" :: Option] then
@@ -90,5 +96,20 @@ if not bundleable then
 end
 
 log("The input file is bundleable.")
+local bundleSuccess, output = pcall(Bundler.Bundle,
+    fs.readFile(parsedArguments["--input" :: Option] :: string),
+    parsedArguments["--track-lines" :: Option] :: boolean,
+    parsedArguments["--root-override" :: Option] :: string,
+    parsedArguments["--env-name" :: Option] :: string,
+    log
+)
 
-Bundler.Bundle(fs.readFile(parsedArguments["--input" :: Option] :: string), parsedArguments["--track-lines" :: Option] :: boolean, log)
+if not bundleSuccess then
+    failBecause(`Failed to bundle: {output}`)
+end
+
+log("Writing output...")
+local writeSuccess, err = pcall(fs.writeFile, parsedArguments["--output" :: Option] :: string, output)
+if not writeSuccess then
+    failBecause(`Failed to write output: {err}`)
+end
