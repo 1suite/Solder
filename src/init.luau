@@ -10,11 +10,11 @@ local Bundler = {}
 function Bundler.IsBundleable(inputFilePath: string): (boolean, string?)
     local fileExtension = string.match(inputFilePath, `.?([^.{fileSeparator}/]*)$`)
     if fileExtension ~= "luau" and fileExtension ~= "rbxm" then
-        return false, "The file extension is not supported."
+        return false, "The input file's extension is not supported."
     end
 
     if not fs.isFile(inputFilePath) then
-        return false, "The file does not exist."
+        return false, "The input file's does not exist."
     end
 
     if fileExtension == "luau" then
