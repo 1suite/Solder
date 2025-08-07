@@ -10,6 +10,7 @@ local Bundler = require("./src")
 
 local process = require("@lune/process")
 local stdio = require("@lune/stdio")
+local serde = require("@lune/serde")
 local fs = require("@lune/fs")
 
 local fileSeparator = process.os == "windows" and "\\" or "/"
@@ -70,12 +71,29 @@ if parsedArguments["--help" :: Option] then
 end
 
 if parsedArguments["--version" :: Option] then
-    stdio.write("Solder v0.1.0")
+    local binFilePath = debug.info(1, "s") :: string
+    local readSuccess, readOutput = pcall(fs.readFile, binFilePath .. "/../pesde.toml")
+
+    if not readSuccess then
+        failBecause(`Failed to get the current version: {readOutput}`)
+    end
+
+    local serdeSuccess, serdeOutput = pcall(serde.decode, "toml" :: "toml", readOutput) --// Luau type checker tomfoolery
+    if not serdeSuccess then
+        failBecause(`Failed to get the current version: {serdeOutput}`)
+    end
+
+    local pesdeToml = serdeOutput :: { version: string }
+    if not pesdeToml.version then
+        failBecause(`Failed to get the current version: the 'version' string is not present in the 'pesde.toml' file.`)
+    end
+
+    stdio.write(`Solder {pesdeToml.version}`)
     process.exit(0)
 end
 
 if not parsedArguments["--input" :: Option] then
-    failBecause("The option '--output' is missing or is invalid.")
+    failBecause("The option '--input' is missing or is invalid.")
 end
 
 if not parsedArguments["--output" :: Option] then
