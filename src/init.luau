@@ -84,7 +84,6 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
     local everAddedParent = false
     local lastVisitedInstance: roblox.Instance
 
-    local childrenCount = #modelRoot
     local function visitChildrenAndBuildStrings(children: {roblox.Instance}): string
         local parentClosureId = currentClosureId
         local scripts = ""
@@ -94,16 +93,16 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
             logFn(`Visiting '{childFullName}'...`)
 
             local childChildren = child:GetChildren()
-            local addedParent = (not lastVisitedInstance) or lastVisitedInstance.Parent ~= child.Parent
-            if addedParent then
-                local doScope = everAddedParent and "do\n" or ""
-                everAddedParent = true
+            local addedDoScope = false
 
+            if (not lastVisitedInstance) or lastVisitedInstance.Parent ~= child.Parent then
+                local doScope = everAddedParent and "do\n" or ""
                 if not child:IsA("LuaSourceContainer") then
+                    addedDoScope = everAddedParent
                     scripts ..= `{doScope}local _parent = SolderInstance.new("{child.Name}", "{child.ClassName}", {child.Parent and "_parent" or "nil"}, {#childChildren})\n`
-                elseif child.Parent and child.Parent:IsA("LuaSourceContainer") then
-                    scripts ..= `{doScope}local _parent = scripts[{parentClosureId}]\n`
                 end
+
+                everAddedParent = true
             end
 
             lastVisitedInstance = child
@@ -111,7 +110,11 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
             if not child:IsA("LuaSourceContainer") then
                 if #childChildren ~= 0 then
                     local childScripts = visitChildrenAndBuildStrings(childChildren)
-                    scripts ..= `do\n{childScripts}{string.sub(childScripts, -1) == "\n" and "" or "\n"}end\n`
+                    scripts ..= `do\n{childScripts}end\n`
+                end
+
+                if addedDoScope then
+                    scripts ..= `end\n`
                 end
 
                 continue
@@ -147,20 +150,37 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
             scripts ..= `scripts[{currentClosureId}] = SolderInstance.new("{child.Name}", "{child.ClassName}", _parent, {#childChildren})\n`
 
             if #childChildren ~= 0 then
+                local preClosureId = currentClosureId
                 local childScripts = visitChildrenAndBuildStrings(childChildren)
-                scripts ..= `do\nlocal _parent = scripts[{currentClosureId - 1}]\n{childScripts}{string.sub(childScripts, -1) == "\n" and "" or "\n"}end\n`
+                scripts ..= `do\nlocal _parent = scripts[{preClosureId}]\n{childScripts}end\n`
             end
 
-            if addedParent and childrenCount == 1 then --// Generates invalid syntax if we don't check for childrenCount
-                scripts ..= "\nend\n"
+            if addedDoScope then
+                scripts ..= `end\n`
             end
         end
 
-        scripts ..= "\n_parent = nil\n"
+        scripts ..= `_parent = nil\n`
         return scripts
     end
 
-    local moduleWithScripts = string.gsub(bundledModule, "--MARKER:SCRIPTS", visitChildrenAndBuildStrings(modelRoot))
+    local scriptsStringsLines = string.split(visitChildrenAndBuildStrings(modelRoot), "\n")
+    local scriptsStrings = ""
+    local indent = 0
+    for idx, line in scriptsStringsLines do
+        if line == "end" then
+            indent -= 1
+        end
+
+        scriptsStrings ..= string.rep("\t", indent) .. line .. "\n"
+
+        if line == "do" then
+            indent += 1
+            continue
+        end
+    end
+
+    local moduleWithScripts = string.gsub(bundledModule, "--MARKER:SCRIPTS", scriptsStrings)
     local moduleWithClosures = string.gsub(moduleWithScripts, "--MARKER:CLOSURES", closuresString)
     local moduleWithChunkNames = string.gsub(moduleWithClosures, "--MARKER:CHUNKNAMES", table.concat(chunkNames, ","))
     local moduleWithTrackedLines = string.gsub(moduleWithChunkNames, "--MARKER:TRACKEDLINES", table.concat(lines, ","))
