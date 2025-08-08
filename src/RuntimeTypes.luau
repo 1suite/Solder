@@ -32,7 +32,7 @@ export type Solder = {
 type SolderClassNames = "Folder" | "Script" | "LocalScript" | "ModuleScript"
 export type ISolderInstance = {
     ClassName: SolderClassNames,
-    Parent: SolderInstance?,
+    Parent: (Instance | SolderInstance)?,
     Name: string,
 
     _Children: {SolderInstance}
@@ -40,7 +40,7 @@ export type ISolderInstance = {
 
 export type SolderInstanceImpl = {
     __index: SolderInstanceImpl,
-    new: (name: string, className: SolderClassNames, parent: SolderInstance?, childrenSize: number?) -> SolderInstance,
+    new: (name: string, className: SolderClassNames, parent: typeof(({} :: ISolderInstance).Parent), childrenSize: number?) -> SolderInstance,
 
     GetFullName: (self: SolderInstance) -> string,
     FindFirstChild: (self: SolderInstance, name: string, recursive: boolean?) -> SolderInstance?,

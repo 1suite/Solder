@@ -33,7 +33,7 @@ type Solder = {
 type SolderClassNames = "Folder" | "Script" | "LocalScript" | "ModuleScript"
 type ISolderInstance = {
     ClassName: SolderClassNames,
-    Parent: SolderInstance?,
+    Parent: (Instance | SolderInstance)?,
     Name: string,
 
     _Children: {SolderInstance}
@@ -41,7 +41,7 @@ type ISolderInstance = {
 
 type SolderInstanceImpl = {
     __index: SolderInstanceImpl,
-    new: (name: string, className: SolderClassNames, parent: SolderInstance?, childrenSize: number?) -> SolderInstance,
+    new: (name: string, className: SolderClassNames, parent: typeof(({} :: ISolderInstance).Parent), childrenSize: number?) -> SolderInstance,
 
     GetFullName: (self: SolderInstance) -> string,
     FindFirstChild: (self: SolderInstance, name: string, recursive: boolean?) -> SolderInstance?,
@@ -253,13 +253,13 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
                 error(`Unable to require module from given path '{target}'`, 2)
             end
 
-            currentInstance = script.Parent
+            currentInstance = script.Parent :: SolderInstance
         else
             if (not script.Parent) or (not script.Parent.Parent) then
                 error(`Unable to require module from given path '{target}'`, 2)
             end
 
-            currentInstance = script.Parent.Parent
+            currentInstance = (script.Parent :: SolderInstance).Parent :: SolderInstance
         end
 
         for idx = 2, #components do
