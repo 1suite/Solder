@@ -1,5 +1,5 @@
 name = "1suite/solder"
-version = "0.1.3"
+version = "0.2.0"
 description = "A bundler for Roblox models"
 authors = ["AstonishedLiker"]
 repository = "https://github.com/1suite/Solder"
