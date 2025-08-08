@@ -51,7 +51,7 @@ type SolderInstanceImpl = {
 
 type SolderInstance = typeof(setmetatable({} :: ISolderInstance, {} :: SolderInstanceImpl))
 
-type SolderInitClosure = (solder: Solder, require: typeof(require), script: (SolderInstance & LuaSourceContainer)?) -> ((...any?) -> any?)
+type SolderInitClosure = (solder: Solder, require: typeof(require), script: (SolderInstance & LuaSourceContainer)?) -> ((...any?) -> ...any?)
 
 local closures: {SolderInitClosure} = {
 --MARKER:CLOSURES
