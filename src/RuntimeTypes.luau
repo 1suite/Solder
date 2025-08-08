@@ -13,10 +13,8 @@ export type Solder = {
 
     --[[
         The "real script", aka the `script` global in the current Luau environment.
-
-        May be nil if ran outside of Roblox, such as Luau runtimes like Lune.
     ]]
-    script: LuaSourceContainer?,
+    script: LuaSourceContainer,
 
     --[[
         Reports whether line tracking was enabled for this build.
@@ -37,7 +35,7 @@ export type ISolderInstance = {
     Parent: SolderInstance?,
     Name: string,
 
-    Children: {SolderInstance}
+    _Children: {SolderInstance}
 }
 
 export type SolderInstanceImpl = {
@@ -47,6 +45,7 @@ export type SolderInstanceImpl = {
     GetFullName: (self: SolderInstance) -> string,
     FindFirstChild: (self: SolderInstance, name: string, recursive: boolean?) -> SolderInstance?,
     WaitForChild: (self: SolderInstance, name: string, timeout: number?) -> SolderInstance?, --// Note that timeout is ignored.
+    GetChildren: (self: SolderInstance) -> typeof(({} :: ISolderInstance)._Children)
 }
 
 export type SolderInstance = typeof(setmetatable({} :: ISolderInstance, {} :: SolderInstanceImpl))

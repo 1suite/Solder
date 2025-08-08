@@ -14,10 +14,8 @@ type Solder = {
 
     --[[
         The "real script", aka the `script` global in the current Luau environment.
-
-        May be nil if ran outside of Roblox, such as Luau runtimes like Lune.
     ]]
-    script: LuaSourceContainer?,
+    script: LuaSourceContainer,
 
     --[[
         Reports whether line tracking was enabled for this build.
@@ -38,7 +36,7 @@ type ISolderInstance = {
     Parent: SolderInstance?,
     Name: string,
 
-    Children: {SolderInstance}
+    _Children: {SolderInstance}
 }
 
 type SolderInstanceImpl = {
@@ -48,6 +46,7 @@ type SolderInstanceImpl = {
     GetFullName: (self: SolderInstance) -> string,
     FindFirstChild: (self: SolderInstance, name: string, recursive: boolean?) -> SolderInstance?,
     WaitForChild: (self: SolderInstance, name: string, timeout: number?) -> SolderInstance?, --// Note that timeout is ignored.
+    GetChildren: (self: SolderInstance) -> typeof(({} :: ISolderInstance)._Children)
 }
 
 type SolderInstance = typeof(setmetatable({} :: ISolderInstance, {} :: SolderInstanceImpl))
@@ -87,18 +86,30 @@ function SolderInstance.new(name, className, parent, childrenSize)
         Name = name,
         ClassName = className,
         Parent = parent,
-        Children = table.create(childrenSize or 0),
+        _Children = table.create(childrenSize or 0),
     } :: ISolderInstance, SolderInstance)
 
     if parent then
-        table.insert(parent.Children, self)
+        table.insert(parent._Children, self)
     end
 
     return self
 end
 
+function SolderInstance:GetFullName()
+    local fullName = self.Name
+
+    local parent = self.Parent
+    while parent do
+        fullName = `{parent.Name}.{fullName}`
+        parent = parent.Parent
+    end
+
+    return fullName
+end
+
 function SolderInstance:FindFirstChild(name, recursive)
-    for _, child in self.Children do
+    for _, child in self._Children do
         if child.Name == name then
             return child
         end
@@ -116,16 +127,13 @@ function SolderInstance:FindFirstChild(name, recursive)
     return nil
 end
 
-function SolderInstance:GetFullName()
-    local fullName = self.Name
+function SolderInstance:WaitForChild(name, timeout)
+    --// Timeout is ignored
+    return self:FindFirstChild(name)
+end
 
-    local parent = self.Parent
-    while parent do
-        fullName = `{parent.Name}.{fullName}`
-        parent = parent.Parent
-    end
-
-    return fullName
+function SolderInstance:GetChildren()
+    return self._Children
 end
 
 local scripts: {[number]: SolderInstance} = {}
@@ -198,50 +206,16 @@ local function buildErrorTree(closureId: number, message: string): string
     return displayMessage
 end
 
-local isRobloxEnv = solder.script and true or false
 local cachedRequires: {[SolderInstance]: any} = {}
 local function errorIfInvalidRet(ret: {[number]: any, n: number}): ()
-    ret.n -= 1 --// adjust for pcall result
-    local isInvalidRet = isRobloxEnv and ret.n ~= 1 or ret.n < 1
-    local isInvalidType = false
-
-    if not isRobloxEnv then
-        for idx: string | number, value in ret do
-            if idx == "n" then
-                continue
-            end
-
-            local valueType = type(value)
-            if valueType ~= "table" and valueType ~= "function" then
-                isInvalidType = true
-                break
-            end
-        end
-    end
-
-    if isInvalidRet and isRobloxEnv then
-        return error("Module code did not return exactly one value", 4)
-    elseif isInvalidRet then
-        return error("module must return a value", 4)
-    elseif isInvalidType then
-        return error("module must return a table or function", 4)
+    if ret.n ~= 2 then --// adjust for pcall result
+        error("Module code did not return exactly one value", 4)
     end
 end
 
-local function getInvalidTargetError(target: string, default: string): string
-    if isRobloxEnv then
-        return `Unable to require module from given path '{target}'`
-    end
-
-    return default
-end
-
-local function getInvalidComponentError(target: string, component: string)
-    return getInvalidTargetError(target, `error requiring module "{target}": could not resolve child component "{component}"`)
-end
-
-local function getClosureFromSolderInstance(target: SolderInstance): SolderInitClosure
-    return closures[table.find(scripts, target) :: number]
+local function getClosureFromSolderInstance(target: SolderInstance): (SolderInitClosure, number)
+    local closureId = table.find(scripts, target) :: number
+    return closures[closureId], closureId
 end
 
 local internalSolderInstanceRequire = nil
@@ -252,11 +226,7 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
         local targetType = type(target)
         local isSolderInstance = targetType == "table" and type(getmetatable(target)) == "table" and getmetatable(target).__index == solderInstanceIndex
         if (not isSolderInstance) and targetType ~= "string" then
-            if isRobloxEnv then
-                error("Attempted to call require with invalid argument(s).", 2)
-            end
-
-            error(`invalid argument #1 to 'require' (string expected, got {targetType})`, 2)
+            error("Attempted to call require with invalid argument(s).", 2)
         end
 
         if isSolderInstance and (target :: SolderInstance).ClassName ~= "ModuleScript" then
@@ -269,24 +239,24 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
         local currentInstance: SolderInstance
         local pathPrefix = string.sub(components[1], 1, 1)
         if pathPrefix == "@" and components[1] ~= "@self" then
-            error(getInvalidTargetError(target, `error requiring module "{target}": {components[1]} is not a valid alias`), 2)
+            error(`Unable to require module from given path '{target}'`, 2)
         end
 
         if components[1] ~= ".." and components[1] ~= "." and pathPrefix ~= "@" then
-            error(getInvalidTargetError(target, `error requiring module "{target}": require path must start with a valid prefix: ./, ../, or @`), 2)
+            error(`Unable to require module from given path '{target}'`, 2)
         end
 
         if components[1] == "@self" then
             currentInstance = script
         elseif components[1] == "." then
             if not script.Parent then
-                error(getInvalidComponentError(target, "./"), 2)
+                error(`Unable to require module from given path '{target}'`, 2)
             end
 
             currentInstance = script.Parent
         else
             if (not script.Parent) or (not script.Parent.Parent) then
-                error(getInvalidComponentError(target, "../"), 2)
+                error(`Unable to require module from given path '{target}'`, 2)
             end
 
             currentInstance = script.Parent.Parent
@@ -295,14 +265,14 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
         for idx = 2, #components do
             local component = components[idx]
             if component == "." and (not script.Parent) then
-                error(getInvalidComponentError(target, "./"), 2)
+                error(`Unable to require module from given path '{target}'`, 2)
             elseif component == "." then
                 currentInstance = script.Parent :: SolderInstance
                 continue
             end
 
             if component == ".." and ((not script.Parent) or (not script.Parent.Parent)) then
-                error(getInvalidComponentError(target, "../"), 2)
+                error(`Unable to require module from given path '{target}'`, 2)
             elseif component == ".." then
                 currentInstance = (script.Parent :: SolderInstance).Parent :: SolderInstance
                 continue
@@ -310,13 +280,13 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
 
             local instance = currentInstance:FindFirstChild(component)
             if not instance then
-                error(getInvalidComponentError(target, component), 2)
+                error(`Unable to require module from given path '{target}'`, 2)
             end
 
             currentInstance = instance
         end
 
-        if currentInstance.ClassName ~= "ModuleScript" then --// No need to check for isRobloxEnv, as every script is a ModuleScript except the entry point if bundled for vanilla Luau / Lune
+        if currentInstance.ClassName ~= "ModuleScript" then
             error(`Unable to require module from given path '{target}'`, 2)
         end
 
@@ -331,14 +301,13 @@ internalSolderInstanceRequire = function(target: SolderInstance): {boolean | any
         return cachedRequires[target]
     end
 
-    local closure = getClosureFromSolderInstance(target)(solder, makeVirtualRequire(target), target :: (LuaSourceContainer & SolderInstance))
-    local output = table.pack(pcall(closure))
-    if not output[1] then
-        if isRobloxEnv then
-            error("Requested module experienced an error while loading", 3)
-        end
+    local closure, closureId = getClosureFromSolderInstance(target)
+    local output = table.pack(xpcall(closure(solder, makeVirtualRequire(target), target :: (LuaSourceContainer & SolderInstance)), function(message)
+        warn(buildErrorTree(closureId, message))
+    end))
 
-        error(output[2], 3)
+    if not output[1] then
+        error("Requested module experienced an error while loading", 3)
     end
 
     table.remove(output, 1)
@@ -348,9 +317,8 @@ internalSolderInstanceRequire = function(target: SolderInstance): {boolean | any
 end
 
 for _, entryPointIdx in entryPoints do
-    local virtualScript = scripts[entryPointIdx] --// They're still used internally to represent files
-
-    local closure = closures[entryPointIdx](solder, makeVirtualRequire(virtualScript), (isRobloxEnv and virtualScript or nil) :: (SolderInstance & LuaSourceContainer)?)
+    local virtualScript = scripts[entryPointIdx]
+    local closure = closures[entryPointIdx](solder, makeVirtualRequire(virtualScript), virtualScript :: (SolderInstance & LuaSourceContainer))
 
     if solder.lineTrackingEnabled then
         task.spawn(xpcall, closure, function(message)
