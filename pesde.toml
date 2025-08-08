@@ -6,6 +6,7 @@ repository = "https://github.com/1suite/Solder"
 license = "MIT"
 
 includes = [
+    "bin/**",
     "src/**",
     "pesde.toml"
 ]
