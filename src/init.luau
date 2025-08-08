@@ -100,7 +100,7 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
                 local doScope = everAddedParent and "do\n" or ""
                 if not child:IsA("LuaSourceContainer") then
                     addedDoScope = everAddedParent
-                    scripts ..= `{doScope}local _parent = SolderInstance.new("{child.Name}", "{child.ClassName}", {child.Parent and "_parent" or "nil"}, {#childChildren})\n`
+                    scripts ..= `{doScope}local _parent = SolderInstance.new("{child.Name}", "{child.ClassName}", {if child.Parent then "_parent" else "script.Parent"}, {#childChildren})\n`
                 end
 
                 everAddedParent = true
