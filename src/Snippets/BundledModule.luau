@@ -89,8 +89,8 @@ function SolderInstance.new(name, className, parent, childrenSize)
         _Children = table.create(childrenSize or 0),
     } :: ISolderInstance, SolderInstance)
 
-    if parent then
-        table.insert(parent._Children, self)
+    if parent and typeof(parent) ~= "Instance" then
+        table.insert((parent :: SolderInstance)._Children, self)
     end
 
     return self
