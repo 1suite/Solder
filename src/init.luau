@@ -9,16 +9,12 @@ local Bundler = {}
 
 function Bundler.IsBundleable(inputFilePath: string): (boolean, string?)
     local fileExtension = string.match(inputFilePath, `.?([^.{fileSeparator}/]*)$`)
-    if fileExtension ~= "luau" and fileExtension ~= "rbxm" then
+    if fileExtension ~= "rbxm" then
         return false, "The input file's extension is not supported."
     end
 
     if not fs.isFile(inputFilePath) then
         return false, "The input file does not exist."
-    end
-
-    if fileExtension == "luau" then
-        return true
     end
 
     local readSuccess, readRet = pcall(fs.readFile, inputFilePath)
