@@ -225,8 +225,13 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
     local function virtualRequire(target: any): any
         local targetType = type(target)
         local isSolderInstance = targetType == "table" and type(getmetatable(target)) == "table" and getmetatable(target).__index == solderInstanceIndex
-        if (not isSolderInstance) and targetType ~= "string" then
+
+        if (not isSolderInstance) and targetType ~= "string" and targetType ~= "number" then
             error("Attempted to call require with invalid argument(s).", 2)
+        end
+
+        if targetType == "number" then
+            return (require)(target) --// Wrapping require to silence warning
         end
 
         if isSolderInstance and (target :: SolderInstance).ClassName ~= "ModuleScript" then
