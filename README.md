@@ -19,9 +19,9 @@ The bundling process preserves your project's hierarchy, can optionally track or
   - `LocalScript`
   - `ModuleScript`
 
-## 📦 Installation
+## 💻 Installation
 
-Solder runs on **Lune 0.10.1** and is designed to be installed via [Pesde](https://pesde.dev/):
+Solder runs on **Lune 0.10.1** and is designed to be installed via **[Pesde](https://pesde.dev/) 0.7.0**:
 
 ```sh
 pesde install 1suite/solder
@@ -77,18 +77,38 @@ solder \
   --override-root "Server.MainHandler"
 ```
 
-## ⚙️ How It Works
+## 🛠️ Using the Runtime SDK
 
-1. **Traversal**, in terms recursively visiting the hierarchy, serializing each instance into an internal [`SolderInstance`](src/RuntimeTypes.luau).
+To use the runtime SDK with a syncing tool such as Rojo, simply require the module like this in your Luau code:
 
-2. **Closure Bundling**, which collects script sources as closures and injects them into [a prebuilt runtime module template](src/Snippets/BundledModule.luau).
+```luau
+-- replace the @pkg alias with the require alias you use for packages
+local solder = require("@pkg/solder").SDK
+```
 
-3. **Output Generation**
-   Writes the final Luau file containing:
-   * All script sources (into "Virtual Closures")
-   * Control-flow based instance hierarchy reconstruction logic (for memory efficiency)
-   * Optional debug line mappings (if `--track-lines` is specified)
-   * Custom environment name (defaults to `SolderRuntime` if not specified)
+With this, you gain a virtual solder table that can be utilized in unbundled code, whether for testing or other use cases.
+
+At runtime, this `require` call returns a table containing the `SDK` field. This `SDK` field resolves to the main `solder` table, which provides the core API accessible in your code.
+
+### What You Get
+
+The returned `solder` table includes:
+
+* **`require`**: The real underlying `require` function, bypassing the virtualized version.
+* **`environmentName`**: A string used as the environment name in unhandled error messages.
+* **`script`**: The actual `script` global for the current Luau environment.
+* **`lineTrackingEnabled`**: A boolean indicating if line tracking is enabled for this build.
+* **`getRealLine(line: number): number`**: A function to convert a bundled file line number to the original source line number.
+
+## 📦 Using the Lune Bundler API
+
+If you append the `.Bundler` suffix to your require path, like this:
+
+```luau
+local bundler = require("@pkg/solder").Bundler
+```
+
+you will get access to the **Bundler API**, which provides additional functionality for bundling scripts programmatically and **is only compatible with the Lune runtime. It is not available on bundled models.**
 
 ## 📋 Requirements
 
