@@ -8,8 +8,9 @@ license = "MIT"
 includes = [
     "bin/**",
     "src/**",
+    ".luaurc",
     "pesde.toml",
-    ".luaurc"
+    "README.md"
 ]
 
 [target]
