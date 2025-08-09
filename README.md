@@ -90,6 +90,8 @@ With this, you gain a virtual solder table that can be utilized in unbundled cod
 
 At runtime, this `require` call returns a table containing the `SDK` field. This `SDK` field resolves to the main `solder` table, which provides the core API accessible in your code.
 
+Note that require's first argument should match the string pattern `@%w+/solder$`. **If it doesn't, it will lead to undefined behavior when trying to use the SDK.**
+
 ### What You Get
 
 The returned `solder` table includes:
