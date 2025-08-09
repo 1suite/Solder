@@ -138,7 +138,7 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
                 error(`Failed to compile: {reason}`)
             end
 
-            closuresString ..= string.format([==[function(solder, require, script)
+            closuresString ..= string.format([==[function(require, script)
                 return function(...)
                     %s
                 end

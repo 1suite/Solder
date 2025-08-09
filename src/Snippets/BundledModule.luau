@@ -51,7 +51,7 @@ type SolderInstanceImpl = {
 
 type SolderInstance = typeof(setmetatable({} :: ISolderInstance, {} :: SolderInstanceImpl))
 
-type SolderInitClosure = (solder: Solder, require: typeof(require), script: (SolderInstance & LuaSourceContainer)?) -> ((...any?) -> ...any?)
+type SolderInitClosure = (require: typeof(require), script: (SolderInstance & LuaSourceContainer)?) -> ((...any?) -> ...any?)
 
 local closures: {SolderInitClosure} = {
 --MARKER:CLOSURES
@@ -220,6 +220,7 @@ end
 
 local internalSolderInstanceRequire = nil
 
+local sdkTable = { SDK = solder }
 local solderInstanceIndex = SolderInstance.__index
 local function makeVirtualRequire(script: SolderInstance): typeof(require)
     local function virtualRequire(target: any): any
@@ -238,6 +239,10 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
             error("Attempted to call require with invalid argument(s).", 2)
         elseif isSolderInstance then
             return internalSolderInstanceRequire(target)
+        end
+
+        if targetType == "string" and string.match(target, "/solder$") then
+            return sdkTable
         end
 
         local components = string.split(target, "/")
@@ -307,7 +312,7 @@ internalSolderInstanceRequire = function(target: SolderInstance): {boolean | any
     end
 
     local closure, closureId = getClosureFromSolderInstance(target)
-    local output = table.pack(xpcall(closure(solder, makeVirtualRequire(target), target :: (LuaSourceContainer & SolderInstance)), function(message)
+    local output = table.pack(xpcall(closure(makeVirtualRequire(target), target :: (LuaSourceContainer & SolderInstance)), function(message)
         warn(buildErrorTree(closureId, message))
     end))
 
@@ -323,7 +328,7 @@ end
 
 for _, entryPointIdx in entryPoints do
     local virtualScript = scripts[entryPointIdx]
-    local closure = closures[entryPointIdx](solder, makeVirtualRequire(virtualScript), virtualScript :: (SolderInstance & LuaSourceContainer))
+    local closure = closures[entryPointIdx](makeVirtualRequire(virtualScript), virtualScript :: (SolderInstance & LuaSourceContainer))
 
     if solder.lineTrackingEnabled then
         task.spawn(xpcall, closure, function(message)
