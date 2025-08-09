@@ -11,15 +11,11 @@ includes = [
     "pesde.toml"
 ]
 
-[scripts]
-roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
-sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
-
 [target]
 environment = "lune"
+build_files = ["src"]
 lib = "src/init.luau"
 bin = "bin/init.luau"
-build_files = ["src"]
 
 [engines]
 pesde = "^0.7.0"
