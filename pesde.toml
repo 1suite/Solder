@@ -10,6 +10,7 @@ includes = [
     "src/**",
     ".luaurc",
     "pesde.toml",
+    "LICENSE.txt",
     "README.md"
 ]
 
@@ -25,7 +26,3 @@ lune = "=0.10.1"
 
 [indices]
 default = "https://github.com/pesde-pkg/index"
-
-[dev_dependencies]
-scripts = { name = "pesde/scripts_rojo", version = "^0.1.1", target = "lune" }
-rojo = { name = "pesde/rojo", version = "^7.4.4", target = "lune" }
