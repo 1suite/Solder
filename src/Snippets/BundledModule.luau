@@ -241,7 +241,7 @@ local function makeVirtualRequire(script: SolderInstance): typeof(require)
             return internalSolderInstanceRequire(target)
         end
 
-        if targetType == "string" and string.match(target, "/solder$") then
+        if targetType == "string" and string.match(target, "^@%w+/solder$") then
             return sdkTable
         end
 
