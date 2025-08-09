@@ -18,14 +18,14 @@ Usage:
     solder [options]
 
 Options:
-    --help                      Show this help message and exit.
-    --version                   Show version information.
-    --input <file>              Specify input file.
-    --output <file>             Specify output file.
-    --quiet                     Suppress non-essential output.
-    --track-lines               Save the line offsets for debugging purposes in error messages.
-    --override-root <path>      Define the path to start bundling at (if the input file is a Roblox Model).
-    --env-name <name>           Define the environment name of the bundled script.
+    --help                      Show help and exit
+    --version                   Show version information
+    --input <file>              Path to the .rbxm / .rbxmx file to bundle
+    --output <file>             Path to write the bundled output
+    --quiet                     Suppress non-essential output
+    --track-lines               Store original line offsets for better debugging
+    --override-root <path>      Start bundling from a specific model path (e.g. `SomeFolder.MainHandler`)
+    --env-name <name>           Set the environment name displayed in runtime errors
 ]]
 
 local parsedArguments: {[Option]: boolean | string} = {}
