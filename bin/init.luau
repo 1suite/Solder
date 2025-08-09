@@ -6,7 +6,7 @@ assert(string.match(_VERSION, "^Lune 0.10.1"), "Solder requires running on Lune 
 
 type Option = "--help" | "--version" | "--input" | "--output" | "--quiet" | "--track-lines" | "--override-root" | "--env-name"
 
-local Bundler = require("./src")
+local Bundler = require("./src").Bundler
 
 local process = require("@lune/process")
 local stdio = require("@lune/stdio")
