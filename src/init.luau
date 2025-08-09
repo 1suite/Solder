@@ -187,4 +187,7 @@ function Bundler.Bundle(input: string, trackLines: boolean, rootOverridePath: st
     return moduleWithEnvironmentName
 end
 
-return Bundler
+return {
+    Bundler = Bundler,
+    SDK = require("@self/SDK")
+}
